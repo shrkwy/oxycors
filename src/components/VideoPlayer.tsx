@@ -1,3 +1,4 @@
+
 "use client";
 
 import type HlsJs from 'hls.js';
@@ -12,23 +13,27 @@ export function VideoPlayer({ manifestUrl }: VideoPlayerProps) {
   const hlsRef = useRef<HlsJs | null>(null);
 
   useEffect(() => {
-    let Hls: typeof HlsJs | undefined;
+    let HlsConstructor: typeof HlsJs | undefined;
     if (typeof window !== 'undefined') {
-      Hls = require('hls.js').default;
+      HlsConstructor = require('hls.js').default;
     }
 
-
-    if (!manifestUrl || !videoRef.current || !Hls) {
+    if (!manifestUrl || !videoRef.current || !HlsConstructor) {
       return;
     }
 
     const videoElement = videoRef.current;
 
-    if (Hls.isSupported()) {
+    // Define the event handler for native HLS playback to allow removal
+    const handleLoadedMetadata = () => {
+      videoElement.play().catch(error => console.warn("Autoplay was prevented for native HLS:", error));
+    };
+
+    if (HlsConstructor.isSupported()) {
       if (hlsRef.current) {
         hlsRef.current.destroy();
       }
-      const hls = new Hls({
+      const hls = new HlsConstructor({
          // Fine-tune HLS.js options here if needed
          // For example, to enable detailed debugging:
          // debug: process.env.NODE_ENV === 'development',
@@ -36,17 +41,17 @@ export function VideoPlayer({ manifestUrl }: VideoPlayerProps) {
       hlsRef.current = hls;
       hls.loadSource(manifestUrl);
       hls.attachMedia(videoElement);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        videoElement.play().catch(error => console.warn("Autoplay was prevented:", error));
+      hls.on(HlsConstructor.Events.MANIFEST_PARSED, () => {
+        videoElement.play().catch(error => console.warn("Autoplay was prevented for HLS.js:", error));
       });
-      hls.on(Hls.Events.ERROR, (event, data) => {
+      hls.on(HlsConstructor.Events.ERROR, (event, data) => {
         if (data.fatal) {
           switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
+            case HlsConstructor.ErrorTypes.NETWORK_ERROR:
               console.error('Fatal network error encountered, trying to recover...', data);
               // hls.startLoad(); // Example recovery attempt
               break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
+            case HlsConstructor.ErrorTypes.MEDIA_ERROR:
               console.error('Fatal media error encountered, trying to recover...', data);
               // hls.recoverMediaError(); // Example recovery attempt
               break;
@@ -63,9 +68,7 @@ export function VideoPlayer({ manifestUrl }: VideoPlayerProps) {
     } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
       // Native HLS support (e.g., Safari)
       videoElement.src = manifestUrl;
-      videoElement.addEventListener('loadedmetadata', () => {
-        videoElement.play().catch(error => console.warn("Autoplay was prevented:", error));
-      });
+      videoElement.addEventListener('loadedmetadata', handleLoadedMetadata);
     } else {
       console.error("HLS.js is not supported and native HLS playback is not available.");
     }
@@ -77,10 +80,11 @@ export function VideoPlayer({ manifestUrl }: VideoPlayerProps) {
       }
       if (videoElement) {
         videoElement.removeAttribute('src'); // Clean up src
-         // Remove event listeners if added directly
+        // Remove the specific event listener for native HLS
+        videoElement.removeEventListener('loadedmetadata', handleLoadedMetadata);
       }
     };
-  }, [manifestUrl, Hls]);
+  }, [manifestUrl]); // Corrected dependency array
 
   return (
     <div className="w-full aspect-video bg-black rounded-lg shadow-lg overflow-hidden">
