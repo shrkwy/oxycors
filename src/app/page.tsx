@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Link2, Play, Loader2, AlertCircle } from 'lucide-react';
+import { Link2, Play, Loader2, AlertCircle, Tv2 } from 'lucide-react'; // Added Tv2 import
 import { useToast } from "@/hooks/use-toast";
 
 
