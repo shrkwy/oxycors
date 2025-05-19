@@ -129,26 +129,27 @@ export default function HomePage() {
       </Card>
 
       {proxiedManifestUrl && !error && (
-        <Card className="w-full max-w-3xl bg-gray-800 border border-gray-700 shadow-lg mt-8">
+        <>
+        
+        <VideoPlayer manifestUrl={proxiedManifestUrl} />
+          <Card className="w-full max-w-3xl border bg-gray-900 border-gray-700 shadow-lg mt-8">
           <CardHeader>
-            <CardTitle className="text-xl text-white text-center">
-              Demo Proxied Stream URL
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <VideoPlayer manifestUrl={proxiedManifestUrl} />
-          </CardContent>
-          <CardFooter>
-            <a
-              href={window.location.origin + proxiedManifestUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block font-mono text-teal-400 break-all hover:underline"
-            >
-              {window.location.origin + proxiedManifestUrl}
-            </a>
-          </CardFooter>
-        </Card>
+              <CardTitle className="text-base text-white text-center">
+                Proxied Stream Access
+              </CardTitle>
+            </CardHeader>
+            <CardFooter>
+              <a
+                href={window.location.origin + proxiedManifestUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-sm font-mono text-teal-400 break-all hover:underline"
+              >
+                {window.location.origin + proxiedManifestUrl}
+              </a>
+            </CardFooter>
+          </Card>
+        </>
       )}
 
       {!proxiedManifestUrl && !isLoading && !error && (
