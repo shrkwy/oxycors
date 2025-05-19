@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, type FormEvent } from 'react';
@@ -6,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Link2, Play, Loader2, AlertCircle, Tv2 } from 'lucide-react'; // Added Tv2 import
+import { Link2, Play, Loader2, AlertCircle, Tv2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -31,12 +32,11 @@ export default function HomePage() {
 
     setIsLoading(true);
     setError(null);
-    setProxiedManifestUrl(null);
+    setProxiedManifestUrl(null); // Clear previous stream if any
 
     try {
       // Validate URL basic structure on client-side
       new URL(manifestUrlInput);
-      // The actual proxying happens when HLS.js requests this URL
       const generatedProxiedUrl = `/api/proxy/manifest?origin_url=${encodeURIComponent(manifestUrlInput)}`;
       setProxiedManifestUrl(generatedProxiedUrl);
        toast({
@@ -56,6 +56,17 @@ export default function HomePage() {
     }
   };
 
+  const handleInputChange = (inputValue: string) => {
+    setManifestUrlInput(inputValue);
+    if (error) {
+      setError(null); // Clear error when user types
+    }
+    // Optionally, clear the video player if the user types after a successful load
+    // if (proxiedManifestUrl) {
+    //   setProxiedManifestUrl(null);
+    // }
+  };
+
   return (
     <div className="flex flex-col items-center space-y-8">
       <Card className="w-full max-w-2xl shadow-xl">
@@ -73,7 +84,7 @@ export default function HomePage() {
                 type="url"
                 placeholder="https://example.com/stream.m3u8"
                 value={manifestUrlInput}
-                onChange={(e) => setManifestUrlInput(e.target.value)}
+                onChange={(e) => handleInputChange(e.target.value)}
                 disabled={isLoading}
                 className="pl-10 text-base"
                 aria-label="HLS Manifest URL"

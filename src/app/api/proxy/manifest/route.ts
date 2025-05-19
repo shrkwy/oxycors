@@ -1,3 +1,4 @@
+
 import { type NextRequest, NextResponse } from 'next/server';
 
 // Function to resolve a possibly relative URL against a base URL
@@ -29,7 +30,6 @@ export async function GET(request: NextRequest) {
   try {
     const response = await fetch(originUrl.toString(), {
       headers: {
-        // It's good practice to mimic the user-agent or specify one
         'User-Agent': 'StreamProxy/1.0',
       },
     });
@@ -39,29 +39,50 @@ export async function GET(request: NextRequest) {
     }
 
     const manifestText = await response.text();
-    const manifestBaseUrl = originUrl.toString();
+    const manifestBaseUrl = originUrl.toString(); // Base URL for resolving relative paths in this manifest
 
     const lines = manifestText.split('\n');
     const rewrittenLines = lines.map(line => {
       line = line.trim();
-      if (line.startsWith('#') || line === '') {
-        // Process directives that might contain URIs
-        if (line.startsWith('#EXT-X-STREAM-INF') || line.startsWith('#EXT-X-I-FRAME-STREAM-INF') || line.startsWith('#EXT-X-MEDIA')) {
+
+      if (line.startsWith('#EXT')) {
+        let tagName = "";
+        // Identify known tags that can contain URIs
+        if (line.startsWith('#EXT-X-STREAM-INF')) tagName = '#EXT-X-STREAM-INF';
+        else if (line.startsWith('#EXT-X-I-FRAME-STREAM-INF')) tagName = '#EXT-X-I-FRAME-STREAM-INF';
+        else if (line.startsWith('#EXT-X-MEDIA')) tagName = '#EXT-X-MEDIA';
+        else if (line.startsWith('#EXT-X-KEY')) tagName = '#EXT-X-KEY';
+        else if (line.startsWith('#EXT-X-MAP')) tagName = '#EXT-X-MAP';
+        // Add other tags like #EXT-X-SESSION-DATA if they can contain URIs that need proxying
+
+        if (tagName) {
           const uriMatch = line.match(/URI="([^"]+)"/);
           if (uriMatch && uriMatch[1]) {
             const originalUri = uriMatch[1];
             const absoluteUri = resolveUrl(originalUri, manifestBaseUrl);
-            const proxyPath = originalUri.toLowerCase().endsWith('.m3u8') ? 'manifest' : 'segment';
+            
+            // Determine if the URI points to another manifest or a media segment/key
+            // Keys and init maps are treated like segments for proxying purposes.
+            const isSubManifest = (tagName === '#EXT-X-STREAM-INF' || tagName === '#EXT-X-I-FRAME-STREAM-INF' || tagName === '#EXT-X-MEDIA') && 
+                                  originalUri.toLowerCase().endsWith('.m3u8');
+            const proxyPath = isSubManifest ? 'manifest' : 'segment';
             const proxiedUri = `/api/proxy/${proxyPath}?origin_url=${encodeURIComponent(absoluteUri)}`;
             return line.replace(uriMatch[0], `URI="${proxiedUri}"`);
           }
         }
+        // If it's a comment tag we don't specifically handle for URI rewriting, return it as is
         return line;
       }
 
-      // This line is likely a URL itself (segment or sub-manifest)
+      if (line.startsWith('#') || line === '') {
+        // Other comments or empty lines
+        return line;
+      }
+
+      // If it's not a comment and not empty, assume it's a direct URL (segment or sub-manifest)
       const absoluteLineUrl = resolveUrl(line, manifestBaseUrl);
-      const proxyPath = line.toLowerCase().endsWith('.m3u8') ? 'manifest' : 'segment';
+      const isSubManifest = line.toLowerCase().endsWith('.m3u8');
+      const proxyPath = isSubManifest ? 'manifest' : 'segment';
       return `/api/proxy/${proxyPath}?origin_url=${encodeURIComponent(absoluteLineUrl)}`;
     });
 
@@ -71,7 +92,7 @@ export async function GET(request: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': response.headers.get('Content-Type') || 'application/vnd.apple.mpegurl',
-        'Access-Control-Allow-Origin': '*', // CORS for the player
+        'Access-Control-Allow-Origin': '*', 
       },
     });
 
