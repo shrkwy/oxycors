@@ -28,10 +28,10 @@ export default function HomePage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!manifestUrlInput.trim()) {
-      setError("Please enter a valid HLS manifest URL.");
+      setError("Please enter a valid URL.");
       toast({
         title: "Input Error",
-        description: "Please enter a valid HLS manifest URL.",
+        description: "Please enter a valid URL.",
         variant: "destructive",
       });
       return;
@@ -42,19 +42,36 @@ export default function HomePage() {
     setProxiedManifestUrl(null);
 
     try {
-      new URL(manifestUrlInput);
-      const generatedProxiedUrl = `/api/proxy/manifest?url=${encodeURIComponent(
+      const inputUrl = new URL(manifestUrlInput);
+      let generatedUrl: string;
+
+      // Detect YouTube URLs
+      const isYouTube = /^(?:https?:)?\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)/.test(
         manifestUrlInput
-      )}`;
-      setProxiedManifestUrl(generatedProxiedUrl);
+      );
+
+      if (isYouTube) {
+        // Use YouTube proxy endpoint
+        generatedUrl = `/api/proxy/youtube?url=${encodeURIComponent(
+          manifestUrlInput
+        )}`;
+      } else {
+        // Assume plain HLS manifest
+        generatedUrl = `/api/proxy/manifest?url=${encodeURIComponent(
+          manifestUrlInput
+        )}`;
+      }
+
+      setProxiedManifestUrl(generatedUrl);
       toast({
         title: "Stream Ready",
-        description:
-          "Proxy URL generated. Player will now attempt to load the stream.",
+        description: isYouTube
+          ? "YouTube stream proxy URL generated. Player will now attempt to load the stream."
+          : "Proxy URL generated. Player will now attempt to load the stream.",
       });
+
     } catch (e) {
-      const errorMessage =
-        e instanceof Error ? e.message : "Invalid URL format.";
+      const errorMessage = e instanceof Error ? e.message : "Invalid URL format.";
       setError(`Invalid URL: ${errorMessage}`);
       toast({
         title: "URL Error",
@@ -80,7 +97,7 @@ export default function HomePage() {
             HLS media proxy
           </CardTitle>
           <CardDescription className="text-center text-gray-400 mt-1">
-            Enter an HLS manifest URL (<code>.m3u8</code>) to proxy and play.
+            Enter an HLS manifest URL (<code>.m3u8</code>) or a YouTube link to proxy and play.
           </CardDescription>
         </CardHeader>
 
@@ -90,12 +107,12 @@ export default function HomePage() {
               <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
               <Input
                 type="url"
-                placeholder="https://example.com/stream.m3u8"
+                placeholder="https://example.com/stream.m3u8 or https://youtu.be/XYZ"
                 value={manifestUrlInput}
                 onChange={(e) => handleInputChange(e.target.value)}
                 disabled={isLoading}
                 className="pl-10 bg-gray-700 text-gray-100 placeholder-gray-500 border-gray-600 focus:border-teal-400"
-                aria-label="HLS Manifest URL"
+                aria-label="Stream URL"
               />
             </div>
             {error && (
@@ -130,10 +147,9 @@ export default function HomePage() {
 
       {proxiedManifestUrl && !error && (
         <>
-        
-        <VideoPlayer manifestUrl={proxiedManifestUrl} />
+          <VideoPlayer manifestUrl={window.location.origin + proxiedManifestUrl} />
           <Card className="w-full max-w-3xl border bg-gray-900 border-gray-700 shadow-lg mt-8">
-          <CardHeader>
+            <CardHeader>
               <CardTitle className="text-base text-white text-center">
                 Proxied Stream Access
               </CardTitle>
