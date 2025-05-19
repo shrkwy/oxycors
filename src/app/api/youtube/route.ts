@@ -1,8 +1,7 @@
-import { url } from 'inspector';
 import { type NextRequest, NextResponse } from 'next/server';
 
 // Helper function to fetch HTML and extract M3U8 URL from YouTube
-async function extractM3U8FromYouTube(youtubeUrl: string): Promise<string | null> {
+async function extractM3U8FromYouTube(youtubeUrl: string, logs: string[]): Promise<string | null> {
   try {
     const response = await fetch(youtubeUrl, {
       headers: {
@@ -12,7 +11,8 @@ async function extractM3U8FromYouTube(youtubeUrl: string): Promise<string | null
     });
 
     if (!response.ok) {
-      console.error(`Failed to fetch YouTube page ${youtubeUrl}: ${response.status} ${response.statusText}`);
+      const errorMsg = `Failed to fetch YouTube page ${youtubeUrl}: ${response.status} ${response.statusText}`;
+      logs.push(errorMsg);
       return null;
     }
 
@@ -22,8 +22,7 @@ async function extractM3U8FromYouTube(youtubeUrl: string): Promise<string | null
     let match = html.match(/"hlsManifestUrl":"(https:[^"]+\.m3u8)"/);
 
     if (match && match[1]) {
-      // return match[1].replace(/\\u0026/g, '&').replace(/\\\//g, '/');
-      return match[1]
+      return match[1];
     }
 
     // Pattern 2: Alternative pattern sometimes found in escaped JS strings
@@ -32,39 +31,46 @@ async function extractM3U8FromYouTube(youtubeUrl: string): Promise<string | null
       return match[1].replace(/\\u0026/g, '&').replace(/\\\//g, '/');
     }
 
-    console.warn(`No *.m3u8 manifest found in YouTube page: ${youtubeUrl}.`);
+    const warnMsg = `No *.m3u8 manifest found in YouTube page: ${youtubeUrl}.`;
+    logs.push(`WARN: ${warnMsg}`);
     return null;
 
-  } catch (error) {
-    console.error(`Error extracting M3U8 from YouTube URL ${youtubeUrl}:`, error);
+  } catch (error: any) {
+    const errorMsg = `Error extracting M3U8 from YouTube URL ${youtubeUrl}: ${error?.message || error}`;
+    logs.push(`ERROR: ${errorMsg}`);
     return null;
   }
 }
 
 
 export async function GET(request: NextRequest) {
+  const logs: string[] = [];
+
   const searchParams = request.nextUrl.searchParams;
   const youtubeUrl = searchParams.get('url');
 
   if (!youtubeUrl) {
-    return NextResponse.json({ error: 'Missing url parameter' }, { status: 400 });
+    logs.push('ERROR: Missing url parameter');
+    return NextResponse.json({ error: 'Missing url parameter', logs }, { status: 400 });
   }
 
-  // Basic check if it looks like a YouTube URL, though extractM3U8FromYouTube will do the heavy lifting
   if (!youtubeUrl.includes('youtube.com') && !youtubeUrl.includes('youtu.be')) {
-      return NextResponse.json({ error: 'Provided URL does not appear to be a YouTube URL.' }, { status: 400 });
+    logs.push('ERROR: Provided URL does not appear to be a YouTube URL.');
+    return NextResponse.json({ error: 'Provided URL does not appear to be a YouTube URL.', logs }, { status: 400 });
   }
 
-  console.log(`Received YouTube URL for extraction: ${youtubeUrl}`);
+  logs.push(`INFO: Received YouTube URL for extraction: ${youtubeUrl}`);
 
-  const hlsManifestUrl = await extractM3U8FromYouTube(youtubeUrl);
+  const hlsManifestUrl = await extractM3U8FromYouTube(youtubeUrl, logs);
 
   if (!hlsManifestUrl) {
-    console.error(`Failed to extract HLS manifest from YouTube URL: ${youtubeUrl}.`);
-    return NextResponse.json({ error: 'Failed to extract HLS manifest from YouTube URL. The video might not be a live stream, the stream may have ended, or its format is not supported by this proxy method.' }, { status: 502 }); // 502 Bad Gateway
+    const errMsg = 'Failed to extract HLS manifest from YouTube URL. The video might not be a live stream, the stream may have ended, or its format is not supported by this proxy method.';
+    logs.push(`ERROR: ${errMsg}`);
+    return NextResponse.json({ error: errMsg, logs }, { status: 502 });
   }
 
-  console.log(`Extracted HLS manifest URL: ${hlsManifestUrl}`);
+  logs.push(`INFO: Extracted HLS manifest URL: ${hlsManifestUrl}`);
+
   const proxyUrl = `${request.nextUrl.origin}/api/proxy/manifest?url=${encodeURIComponent(hlsManifestUrl)}`;
-  return NextResponse.json({ responseUrl: youtubeUrl, manifestUrl: hlsManifestUrl, proxyUrl: proxyUrl }, { status: 200 });
+  return NextResponse.json({ responseUrl: youtubeUrl, manifestUrl: hlsManifestUrl, proxyUrl, logs }, { status: 200 });
 }
