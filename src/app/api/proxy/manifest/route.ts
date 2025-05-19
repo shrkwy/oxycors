@@ -14,17 +14,17 @@ function resolveUrl(relativeOrAbsoluteUrl: string, baseUrl: string): string {
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const originUrlString = searchParams.get('origin_url');
+  const urlString = searchParams.get('url');
 
-  if (!originUrlString) {
-    return NextResponse.json({ error: 'Missing origin_url parameter' }, { status: 400 });
+  if (!urlString) {
+    return NextResponse.json({ error: 'Missing url parameter' }, { status: 400 });
   }
 
   let originUrl: URL;
   try {
-    originUrl = new URL(originUrlString);
+    originUrl = new URL(urlString);
   } catch (error) {
-    return NextResponse.json({ error: 'Invalid origin_url format' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid url format' }, { status: 400 });
   }
 
   try {
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
             const isSubManifest = (tagName === '#EXT-X-STREAM-INF' || tagName === '#EXT-X-I-FRAME-STREAM-INF' || tagName === '#EXT-X-MEDIA') && 
                                   originalUri.toLowerCase().endsWith('.m3u8');
             const proxyPath = isSubManifest ? 'manifest' : 'segment';
-            const proxiedUri = `/api/proxy/${proxyPath}?origin_url=${encodeURIComponent(absoluteUri)}`;
+            const proxiedUri = `/api/proxy/${proxyPath}?url=${encodeURIComponent(absoluteUri)}`;
             return line.replace(uriMatch[0], `URI="${proxiedUri}"`);
           }
         }
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
       const absoluteLineUrl = resolveUrl(line, manifestBaseUrl);
       const isSubManifest = line.toLowerCase().endsWith('.m3u8');
       const proxyPath = isSubManifest ? 'manifest' : 'segment';
-      return `/api/proxy/${proxyPath}?origin_url=${encodeURIComponent(absoluteLineUrl)}`;
+      return `/api/proxy/${proxyPath}?url=${encodeURIComponent(absoluteLineUrl)}`;
     });
 
     const rewrittenManifest = rewrittenLines.join('\n');

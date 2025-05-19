@@ -37,7 +37,7 @@ export default function HomePage() {
     try {
       // Validate URL basic structure on client-side
       new URL(manifestUrlInput);
-      const generatedProxiedUrl = `/api/proxy/manifest?origin_url=${encodeURIComponent(manifestUrlInput)}`;
+      const generatedProxiedUrl = `/api/proxy/manifest?url=${encodeURIComponent(manifestUrlInput)}`;
       setProxiedManifestUrl(generatedProxiedUrl);
        toast({
         title: "Stream Ready",
@@ -62,9 +62,9 @@ export default function HomePage() {
       setError(null); // Clear error when user types
     }
     // Optionally, clear the video player if the user types after a successful load
-    // if (proxiedManifestUrl) {
-    //   setProxiedManifestUrl(null);
-    // }
+    if (proxiedManifestUrl) {
+       setProxiedManifestUrl(null);
+    }
   };
 
   return (

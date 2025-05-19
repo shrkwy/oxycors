@@ -2,21 +2,21 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const originUrlString = searchParams.get('origin_url');
+  const urlString = searchParams.get('url');
 
-  if (!originUrlString) {
-    return NextResponse.json({ error: 'Missing origin_url parameter' }, { status: 400 });
+  if (!urlString) {
+    return NextResponse.json({ error: 'Missing url parameter' }, { status: 400 });
   }
 
   try {
     // Validate URL (basic check, fetch will do more)
-    new URL(originUrlString);
+    new URL(urlString);
   } catch (error) {
-    return NextResponse.json({ error: 'Invalid origin_url format' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid url format' }, { status: 400 });
   }
   
   try {
-    const response = await fetch(originUrlString, {
+    const response = await fetch(urlString, {
       headers: {
         // It's good practice to mimic the user-agent or specify one
         'User-Agent': 'StreamProxy/1.0',
