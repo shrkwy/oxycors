@@ -74,7 +74,7 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col items-center space-y-10 py-12 bg-gray-900 min-h-screen">
-      <Card className="w-full max-w-2xl bg-gray-800 border border-gray-700 shadow-lg">
+      <Card className="w-full max-w-3xl bg-gray-800 border border-gray-700 shadow-lg">
         <CardHeader>
           <CardTitle className="text-2xl font-semibold text-white text-center">
             HLS media proxy

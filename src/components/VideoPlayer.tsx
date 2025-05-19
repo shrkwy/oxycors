@@ -34,7 +34,7 @@ export function VideoPlayer({ manifestUrl }: VideoPlayerProps) {
   }
 
   return (
-    <div className="w-full aspect-video bg-black rounded-lg shadow-lg overflow-hidden" data-ai-hint="video stream player">
+    <div className="w-full max-w-3xl aspect-video bg-black rounded-lg shadow-lg overflow-hidden" data-ai-hint="video stream player">
       <MediaPlayer
         ref={player}
         title="HLS Stream" // You might want to make title dynamic if available
