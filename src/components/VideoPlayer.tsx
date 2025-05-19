@@ -36,7 +36,7 @@ export function VideoPlayer({ manifestUrl }: VideoPlayerProps) {
       const hls = new HlsConstructor({
          // Fine-tune HLS.js options here if needed
          // For example, to enable detailed debugging:
-         // debug: process.env.NODE_ENV === 'development',
+         debug: true, // Enabled HLS.js debugging
       });
       hlsRef.current = hls;
       hls.loadSource(manifestUrl);
@@ -48,21 +48,21 @@ export function VideoPlayer({ manifestUrl }: VideoPlayerProps) {
         if (data.fatal) {
           switch (data.type) {
             case HlsConstructor.ErrorTypes.NETWORK_ERROR:
-              console.error('Fatal network error encountered, trying to recover...', data);
+              console.error('HLS.js: Fatal network error encountered.', data);
               // hls.startLoad(); // Example recovery attempt
               break;
             case HlsConstructor.ErrorTypes.MEDIA_ERROR:
-              console.error('Fatal media error encountered, trying to recover...', data);
+              console.error('HLS.js: Fatal media error encountered.', data);
               // hls.recoverMediaError(); // Example recovery attempt
               break;
             default:
-              console.error('Fatal HLS error:', data);
+              console.error('HLS.js: Fatal error.', data);
               hls.destroy();
               hlsRef.current = null;
               break;
           }
         } else {
-          console.warn('Non-fatal HLS error:', data);
+          console.warn('HLS.js: Non-fatal error.', data);
         }
       });
     } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
@@ -84,7 +84,7 @@ export function VideoPlayer({ manifestUrl }: VideoPlayerProps) {
         videoElement.removeEventListener('loadedmetadata', handleLoadedMetadata);
       }
     };
-  }, [manifestUrl]); // Corrected dependency array
+  }, [manifestUrl]); // Dependency array is correct
 
   return (
     <div className="w-full aspect-video bg-black rounded-lg shadow-lg overflow-hidden">
