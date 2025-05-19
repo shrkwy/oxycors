@@ -1,38 +1,35 @@
+
 import { type NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const urlString = searchParams.get('url');
+  const allowedOrigin = 'https://pixelarc.vercel.app';
 
   if (!urlString) {
-    return NextResponse.json({ error: 'Missing url parameter' }, { status: 400 });
+    return NextResponse.json({ error: 'Missing url parameter' }, { status: 400, headers: { 'Access-Control-Allow-Origin': allowedOrigin } });
   }
 
   try {
     // Validate URL (basic check, fetch will do more)
     new URL(urlString);
   } catch (error) {
-    return NextResponse.json({ error: 'Invalid url format' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid url format' }, { status: 400, headers: { 'Access-Control-Allow-Origin': allowedOrigin } });
   }
   
   try {
     const response = await fetch(urlString, {
       headers: {
-        // It's good practice to mimic the user-agent or specify one
         'User-Agent': 'StreamProxy/1.0',
-        // Forward range requests if any (important for seeking, though HLS segments are usually small)
-        // Range: request.headers.get('Range') || undefined, // Be careful with this
       },
     });
 
     if (!response.ok) {
-      return NextResponse.json({ error: `Failed to fetch segment: ${response.statusText}` }, { status: response.status });
+      return NextResponse.json({ error: `Failed to fetch segment: ${response.statusText}` }, { status: response.status, headers: { 'Access-Control-Allow-Origin': allowedOrigin } });
     }
 
-    // Stream the response
     const readableStream = response.body;
     
-    // Copy relevant headers from the original response
     const headers = new Headers();
     const contentType = response.headers.get('Content-Type');
     const contentLength = response.headers.get('Content-Length');
@@ -47,8 +44,8 @@ export async function GET(request: NextRequest) {
     if (lastModified) headers.set('Last-Modified', lastModified);
     if (eTag) headers.set('ETag', eTag);
     
-    headers.set('Access-Control-Allow-Origin', '*'); // CORS for the player
-    headers.set('Cache-Control', 'public, max-age=3600'); // Cache segments for an hour
+    headers.set('Access-Control-Allow-Origin', allowedOrigin); 
+    headers.set('Cache-Control', 'public, max-age=3600'); 
 
     return new NextResponse(readableStream, {
       status: response.status,
@@ -58,6 +55,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error proxying segment:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: `Internal server error: ${errorMessage}` }, { status: 500 });
+    return NextResponse.json({ error: `Internal server error: ${errorMessage}` }, { status: 500, headers: { 'Access-Control-Allow-Origin': allowedOrigin } });
   }
 }
