@@ -18,7 +18,10 @@ async function extractM3U8FromYouTube(youtubeUrl: string, logs: string[]): Promi
   try {
     const res = await fetch(youtubeUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0',
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0",
+        "Referer": "https://www.youtube.com/",
+        "Accept-Language": "en-US,en;q=0.9",
       },
     });
     if (!res.ok) {
@@ -53,7 +56,9 @@ async function proxyAndRewriteManifest(manifestUrl: string, logs: string[]): Pro
   try {
     const res = await fetch(manifestUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0',
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0",
+        "Referer": "https://www.youtube.com/",
       },
     });
     if (!res.ok) {

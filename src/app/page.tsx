@@ -24,6 +24,7 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const publicUrl = process.env.NEXT_PUBLIC_URL || window.location.origin;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -147,7 +148,7 @@ export default function HomePage() {
 
       {proxiedManifestUrl && !error && (
         <>
-          <VideoPlayer manifestUrl={window.location.origin + proxiedManifestUrl} />
+          <VideoPlayer manifestUrl={proxiedManifestUrl} />
           <Card className="w-full max-w-3xl border bg-gray-900 border-gray-700 shadow-lg mt-8">
             <CardHeader>
               <CardTitle className="text-base text-white text-center">
@@ -156,12 +157,12 @@ export default function HomePage() {
             </CardHeader>
             <CardFooter>
               <a
-                href={window.location.origin + proxiedManifestUrl}
+                href={publicUrl + proxiedManifestUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-sm font-mono text-teal-400 break-all hover:underline"
               >
-                {window.location.origin + proxiedManifestUrl}
+                {publicUrl + proxiedManifestUrl}
               </a>
             </CardFooter>
           </Card>
