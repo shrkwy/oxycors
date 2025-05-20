@@ -24,7 +24,7 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const publicUrl = process.env.NEXT_PUBLIC_URL || window.location.origin;
+  const publicUrl = process.env.NEXT_PUBLIC_URL;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -157,12 +157,12 @@ export default function HomePage() {
             </CardHeader>
             <CardFooter>
               <a
-                href={publicUrl + proxiedManifestUrl}
+                href={publicUrl || window.location.origin + proxiedManifestUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-sm font-mono text-teal-400 break-all hover:underline"
               >
-                {publicUrl + proxiedManifestUrl}
+                {publicUrl || window.location.origin + proxiedManifestUrl}
               </a>
             </CardFooter>
           </Card>
