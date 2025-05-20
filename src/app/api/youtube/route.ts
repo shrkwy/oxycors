@@ -6,38 +6,30 @@ async function extractM3U8FromYouTube(youtubeUrl: string, logs: string[]): Promi
     const response = await fetch(youtubeUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0',
-        'Accept-Language': 'en-US,en;q=0.9',
       },
     });
-
     if (!response.ok) {
       const errorMsg = `Failed to fetch YouTube page ${youtubeUrl}: ${response.status} ${response.statusText}`;
-      logs.push(errorMsg);
+      logs.push(`ERROR: ${errorMsg}`);
       return null;
     }
 
     const html = await response.text();
 
-    // Pattern 1: Standard JSON-like embed
-    let match = html.match(/"hlsManifestUrl":"(https:[^"]+\.m3u8)"/);
-
-    if (match && match[1]) {
-      return match[1];
+    let m = html.match(/"hlsManifestUrl":"(https:[^"]+\.m3u8)"/);
+    if (!m) {
+      m = html.match(/\\"hlsManifestUrl\\":\\"(https:[^"]+\.m3u8)\\"/);
+    }
+    if (!m?.[1]) {
+      logs.push('WARN: No HLS manifest in YouTube page.');
+      return null;
     }
 
-    // Pattern 2: Alternative pattern sometimes found in escaped JS strings
-    match = html.match(/\\?"hlsManifestUrl\\?":\\?"(https:[^"]+\\.m3u8[^"]*)\\"/);
-    if (match && match[1]) {
-      return match[1].replace(/\\u0026/g, '&').replace(/\\\//g, '/');
-    }
-
-    const warnMsg = `No *.m3u8 manifest found in YouTube page: ${youtubeUrl}.`;
-    logs.push(`WARN: ${warnMsg}`);
-    return null;
+    // Unescape
+    return m[1].replace(/\\u0026/g, '&').replace(/\\\//g, '/');
 
   } catch (error: any) {
-    const errorMsg = `Error extracting M3U8 from YouTube URL ${youtubeUrl}: ${error?.message || error}`;
-    logs.push(`ERROR: ${errorMsg}`);
+    logs.push(`ERROR: Exception during YouTube HLS extraction from ${youtubeUrl}: ${error?.message || error}`);
     return null;
   }
 }
