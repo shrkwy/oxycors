@@ -18,10 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const response = await fetch(urlString, {
       headers: {
-        // It's good practice to mimic the user-agent or specify one
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0',
-        // Forward range requests if any (important for seeking, though HLS segments are usually small)
-        // Range: request.headers.get('Range') || undefined, // Be careful with this
       },
     });
 
@@ -29,10 +26,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: `Failed to fetch segment: ${response.statusText}` }, { status: response.status });
     }
 
-    // Stream the response
     const readableStream = response.body;
     
-    // Copy relevant headers from the original response
     const headers = new Headers();
     const contentType = response.headers.get('Content-Type');
     const contentLength = response.headers.get('Content-Length');
@@ -40,15 +35,30 @@ export async function GET(request: NextRequest) {
     const lastModified = response.headers.get('Last-Modified');
     const eTag = response.headers.get('ETag');
 
-
     if (contentType) headers.set('Content-Type', contentType);
     if (contentLength) headers.set('Content-Length', contentLength);
     if (contentEncoding) headers.set('Content-Encoding', contentEncoding);
     if (lastModified) headers.set('Last-Modified', lastModified);
     if (eTag) headers.set('ETag', eTag);
+
+    // ✅ CORS control
+    const origin = request.headers.get('Origin');
+    try {
+      const allowedOriginsRaw = process.env.ALLOWED_ORIGINS;
+      const allowedOrigins = allowedOriginsRaw ? JSON.parse(allowedOriginsRaw) as string[] : null;
     
-    headers.set('Access-Control-Allow-Origin', '*'); // CORS for the player
-    headers.set('Cache-Control', 'public, max-age=3600'); // Cache segments for an hour
+      if (allowedOrigins && origin && allowedOrigins.includes(origin)) {
+        headers.set('Access-Control-Allow-Origin', origin);
+        headers.set('Vary', 'Origin');
+      } else if (!allowedOrigins) {
+        headers.set('Access-Control-Allow-Origin', '*');
+        headers.set('Vary', 'Origin');
+      }
+    } catch {
+      // Fail silently if ALLOWED_ORIGINS is malformed
+    }
+
+    headers.set('Cache-Control', 'public, max-age=3600');
 
     return new NextResponse(readableStream, {
       status: response.status,

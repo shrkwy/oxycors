@@ -157,12 +157,12 @@ export default function HomePage() {
             </CardHeader>
             <CardFooter>
               <a
-                href={publicUrl || window.location.origin + proxiedManifestUrl}
+                href={publicUrl + proxiedManifestUrl || window.location.origin + proxiedManifestUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-sm font-mono text-teal-400 break-all hover:underline"
               >
-                {publicUrl || window.location.origin + proxiedManifestUrl}
+                {publicUrl + proxiedManifestUrl || window.location.origin + proxiedManifestUrl}
               </a>
             </CardFooter>
           </Card>
