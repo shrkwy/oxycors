@@ -56,6 +56,7 @@ export default function HomePage() {
         generatedUrl = `/api/proxy/youtube?url=${encodeURIComponent(
           manifestUrlInput
         )}`;
+ generatedUrl += generatedUrl.includes('?') ? '&oxycors=livestream.m3u8' : '?oxycors=livestream.m3u8';
       } else {
         // Assume plain HLS manifest
         generatedUrl = `/api/proxy/manifest?url=${encodeURIComponent(
