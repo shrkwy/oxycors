@@ -98,7 +98,7 @@ export default function HomePage() {
             HLS media proxy
           </CardTitle>
           <CardDescription className="text-center text-gray-400 mt-1">
-            Enter an HLS manifest URL (<code>.m3u8</code>) or a YouTube link to proxy and play.
+            Enter an HLS manifest URL (<code>.m3u8</code>) or a YouTube livestream link to proxy and play.
           </CardDescription>
         </CardHeader>
 
@@ -152,17 +152,17 @@ export default function HomePage() {
           <Card className="w-full max-w-3xl border bg-gray-900 border-gray-700 shadow-lg mt-8">
             <CardHeader>
               <CardTitle className="text-base text-white text-center">
-                Proxied Stream Access
+                Proxied Stream Access on:
               </CardTitle>
             </CardHeader>
             <CardFooter>
               <a
-                href={publicUrl + proxiedManifestUrl || window.location.origin + proxiedManifestUrl}
+                href={publicUrl ? publicUrl : window.location.origin + proxiedManifestUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-sm font-mono text-teal-400 break-all hover:underline"
               >
-                {publicUrl + proxiedManifestUrl || window.location.origin + proxiedManifestUrl}
+                {publicUrl ? publicUrl : window.location.origin + proxiedManifestUrl}
               </a>
             </CardFooter>
           </Card>
