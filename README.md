@@ -122,7 +122,6 @@ https://example.com/live/stream.m3u8
 * **`NEXT_PUBLIC_URL`**
   `RECOMMENDED` Declare your Host / Public URL of hosted instance. (e.g. `https://my-oxycors-app.service.app`).
   <br>
-  <br>
 
 * **`ALLOWED_ORIGINS`**
   `RECOMMENDED` JSON array of allowed origins.
@@ -131,7 +130,6 @@ https://example.com/live/stream.m3u8
   ```json
   ["https://example1.app", "https://example2.app"]
   ```
-  <br>
 
 #### In your `.env` you may:  
    ```ini
