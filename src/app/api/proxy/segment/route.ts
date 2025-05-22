@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+export const runtime = process.env.RUNTIME === 'nodejs' ? 'nodejs' : 'edge'; // or 'nodejs' if CORS issues present.
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;

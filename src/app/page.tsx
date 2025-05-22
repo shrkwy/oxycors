@@ -37,33 +37,33 @@ export default function HomePage() {
       });
       return;
     }
-
+  
     setIsLoading(true);
     setError(null);
     setProxiedManifestUrl(null);
-
+  
     try {
       const inputUrl = new URL(manifestUrlInput);
       let generatedUrl: string;
-
-      // Detect YouTube URLs
-      const isYouTube = /^(?:https?:)?\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)/.test(
+  
+      // Detect YouTube livestream URLs
+      const isYouTube = /^(?:https?:)?\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|live\/|channel\/[^/]+\/live|c\/[^/]+\/live|@[^/]+\/live)|youtu\.be\/[^/]+)/i.test(
         manifestUrlInput
       );
-
+  
       if (isYouTube) {
         // Use YouTube proxy endpoint
         generatedUrl = `/api/proxy/youtube?url=${encodeURIComponent(
           manifestUrlInput
         )}`;
- generatedUrl += generatedUrl.includes('?') ? '&oxycors=livestream.m3u8' : '?oxycors=livestream.m3u8';
+        generatedUrl += generatedUrl.includes("?") ? "&oxycors=livestream.m3u8" : "?oxycors=livestream.m3u8";
       } else {
         // Assume plain HLS manifest
         generatedUrl = `/api/proxy/manifest?url=${encodeURIComponent(
           manifestUrlInput
         )}`;
       }
-
+  
       setProxiedManifestUrl(generatedUrl);
       toast({
         title: "Stream Ready",
@@ -71,7 +71,7 @@ export default function HomePage() {
           ? "YouTube stream proxy URL generated. Player will now attempt to load the stream."
           : "Proxy URL generated. Player will now attempt to load the stream.",
       });
-
+  
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : "Invalid URL format.";
       setError(`Invalid URL: ${errorMessage}`);
@@ -83,7 +83,7 @@ export default function HomePage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  };  
 
   const handleInputChange = (inputValue: string) => {
     setManifestUrlInput(inputValue);

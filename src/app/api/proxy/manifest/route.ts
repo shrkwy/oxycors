@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+export const runtime = process.env.RUNTIME === 'nodejs' ? 'nodejs' : 'edge'; // or 'nodejs' if CORS issues present.
 
 // Function to resolve a possibly relative URL against a base URL
 function resolveUrl(relativeOrAbsoluteUrl: string, baseUrl: string): string {

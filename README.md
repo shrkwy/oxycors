@@ -121,6 +121,10 @@ https://example.com/live/stream.m3u8
 
 * **`NEXT_PUBLIC_URL`**
   Declare your Host (e.g. `https://my-oxycors-app.service.app`).
+
+* **`RUNTIME`**
+  Mention the runtime to execute proxy functions with; either `nodejs` or `edge`. Will fallback to "edge" if undeclared.
+
 * **`ALLOWED_ORIGINS`**
   ⚠️JSON array of allowed origins (origins that can use your proxy service). If undeclared, all origins are allowed access. Include `""` to permit the homepage:
 
