@@ -17,7 +17,10 @@ export async function GET(request: NextRequest) {
 
   if (!urlString) {
     logs.push("Missing url parameter");
-    return NextResponse.json({ error: "Missing url parameter", logs }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing url parameter", logs },
+      { status: 400 }
+    );
   }
 
   let originUrl: URL;
@@ -25,15 +28,35 @@ export async function GET(request: NextRequest) {
     originUrl = new URL(urlString);
   } catch (error) {
     logs.push(`Invalid URL format: ${String(error)}`);
-    return NextResponse.json({ error: "Invalid url format", logs }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid url format", logs },
+      { status: 400 }
+    );
   }
 
   let response: Response;
   try {
     response = await fetch(originUrl.toString(), {
       headers: {
+        // 🍏 Mobile Chrome on Android UA
         "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0",
+          "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.7103.125 Mobile Safari/537.36",
+
+        // 🎯 Standard browser headers
+        "Accept":
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,application/vnd.apple.mpegurl,application/x-mpegURL,application/json,text/plain,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+        "Connection": "keep-alive",
+
+        // 🚧 Anti-bot fetch metadata
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "cross-site",
+        "Sec-Fetch-User": "?1",
+        "Upgrade-Insecure-Requests": "1",
       },
     });
   } catch (fetchError) {
