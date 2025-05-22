@@ -5,65 +5,81 @@ function resolveUrl(relativeOrAbsoluteUrl: string, baseUrl: string): string {
   try {
     return new URL(relativeOrAbsoluteUrl, baseUrl).toString();
   } catch (e) {
-    // If it's already a valid absolute URL or other error, return as is or handle
-    console.warn(
-      `Could not resolve URL: ${relativeOrAbsoluteUrl} with base ${baseUrl}`,
-      e
-    );
-    return relativeOrAbsoluteUrl; // Fallback, might be incorrect for some relative paths
+    // We can't push to logs here; resolution errors will surface later
+    return relativeOrAbsoluteUrl;
   }
 }
 
 export async function GET(request: NextRequest) {
+  const logs: string[] = [];
   const searchParams = request.nextUrl.searchParams;
   const urlString = searchParams.get("url");
 
   if (!urlString) {
-    return NextResponse.json(
-      { error: "Missing url parameter" },
-      { status: 400 }
-    );
+    logs.push("Missing url parameter");
+    return NextResponse.json({ error: "Missing url parameter", logs }, { status: 400 });
   }
 
   let originUrl: URL;
   try {
     originUrl = new URL(urlString);
   } catch (error) {
-    return NextResponse.json({ error: "Invalid url format" }, { status: 400 });
+    logs.push(`Invalid URL format: ${String(error)}`);
+    return NextResponse.json({ error: "Invalid url format", logs }, { status: 400 });
   }
 
+  let response: Response;
   try {
-    const response = await fetch(originUrl.toString(), {
+    response = await fetch(originUrl.toString(), {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0",
       },
     });
+  } catch (fetchError) {
+    logs.push(`Network error fetching manifest: ${String(fetchError)}`);
+    return NextResponse.json(
+      { error: "Failed to fetch manifest", logs },
+      { status: 502 }
+    );
+  }
 
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: `Failed to fetch manifest: ${response.statusText}` },
-        { status: response.status }
-      );
-    }
+  if (!response.ok) {
+    logs.push(`Upstream responded ${response.status} ${response.statusText}`);
+    return NextResponse.json(
+      { error: `Failed to fetch manifest: ${response.statusText}`, logs },
+      { status: response.status }
+    );
+  }
 
-    const manifestText = await response.text();
-    const manifestBaseUrl = originUrl.toString(); // Base URL for resolving relative paths in this manifest
+  let manifestText: string;
+  try {
+    manifestText = await response.text();
+  } catch (textError) {
+    logs.push(`Error reading manifest text: ${String(textError)}`);
+    return NextResponse.json(
+      { error: "Failed to read manifest body", logs },
+      { status: 500 }
+    );
+  }
 
+  const manifestBaseUrl = originUrl.toString();
+  let rewrittenManifest: string;
+
+  try {
     const lines = manifestText.split("\n");
-    const rewrittenLines = lines.map((line) => {
-      line = line.trim();
+    const rewrittenLines = lines.map((rawLine) => {
+      const line = rawLine.trim();
 
+      // Tag-based URI rewriting
       if (line.startsWith("#EXT")) {
         let tagName = "";
-        // Identify known tags that can contain URIs
         if (line.startsWith("#EXT-X-STREAM-INF")) tagName = "#EXT-X-STREAM-INF";
         else if (line.startsWith("#EXT-X-I-FRAME-STREAM-INF"))
           tagName = "#EXT-X-I-FRAME-STREAM-INF";
         else if (line.startsWith("#EXT-X-MEDIA")) tagName = "#EXT-X-MEDIA";
         else if (line.startsWith("#EXT-X-KEY")) tagName = "#EXT-X-KEY";
         else if (line.startsWith("#EXT-X-MAP")) tagName = "#EXT-X-MAP";
-        // Add other tags like #EXT-X-SESSION-DATA if they can contain URIs that need proxying
 
         if (tagName) {
           const uriMatch = line.match(/URI="([^"]+)"/);
@@ -71,30 +87,29 @@ export async function GET(request: NextRequest) {
             const originalUri = uriMatch[1];
             const absoluteUri = resolveUrl(originalUri, manifestBaseUrl);
 
-            // Determine if the URI points to another manifest or a media segment/key
-            // Keys and init maps are treated like segments for proxying purposes.
             const isSubManifest =
               (tagName === "#EXT-X-STREAM-INF" ||
                 tagName === "#EXT-X-I-FRAME-STREAM-INF" ||
                 tagName === "#EXT-X-MEDIA") &&
               originalUri.toLowerCase().endsWith(".m3u8");
+
             const proxyPath = isSubManifest ? "manifest" : "segment";
             const proxiedUri = `/api/proxy/${proxyPath}?url=${encodeURIComponent(
               absoluteUri
             )}`;
+
             return line.replace(uriMatch[0], `URI="${proxiedUri}"`);
           }
         }
-        // If it's a comment tag we don't specifically handle for URI rewriting, return it as is
         return line;
       }
 
+      // Comments or empty
       if (line.startsWith("#") || line === "") {
-        // Other comments or empty lines
         return line;
       }
 
-      // If it's not a comment and not empty, assume it's a direct URL (segment or sub-manifest)
+      // Direct URL lines
       const absoluteLineUrl = resolveUrl(line, manifestBaseUrl);
       const isSubManifest = line.toLowerCase().endsWith(".m3u8");
       const proxyPath = isSubManifest ? "manifest" : "segment";
@@ -103,41 +118,34 @@ export async function GET(request: NextRequest) {
       )}`;
     });
 
-    const rewrittenManifest = rewrittenLines.join("\n");
-
-    return new NextResponse(rewrittenManifest, {
-      status: 200,
-      headers: {
-        "Content-Type":
-          response.headers.get("Content-Type") ||
-          "application/vnd.apple.mpegurl",
-        "Access-Control-Allow-Origin": (() => {
-          try {
-            const origin = request.headers.get("Origin");
-            const allowedRaw = process.env.ALLOWED_ORIGINS;
-            const allowed = allowedRaw ? JSON.parse(allowedRaw) : null;
-    
-            if (allowed && origin && allowed.includes(origin)) {
-              return origin;
-            } else if (!allowed) {
-              return "*"; // fallback when ALLOWED_ORIGINS is not set
-            } else {
-              return "none";
-            }
-          } catch {
-            return "none";
-          }
-        })(),
-        Vary: "Origin",
-      },
-    });
-  } catch (error) {
-    console.error("Error proxying manifest:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
+    rewrittenManifest = rewrittenLines.join("\n");
+  } catch (rewriteError) {
+    logs.push(`Error rewriting manifest: ${String(rewriteError)}`);
     return NextResponse.json(
-      { error: `Internal server error: ${errorMessage}` },
+      { error: "Failed to rewrite manifest", logs },
       { status: 500 }
     );
   }
+
+  // Success — no logs returned
+  return new NextResponse(rewrittenManifest, {
+    status: 200,
+    headers: {
+      "Content-Type":
+        response.headers.get("Content-Type") || "application/vnd.apple.mpegurl",
+      "Access-Control-Allow-Origin": (() => {
+        try {
+          const origin = request.headers.get("Origin");
+          const allowedRaw = process.env.ALLOWED_ORIGINS;
+          const allowed = allowedRaw ? JSON.parse(allowedRaw) : null;
+          if (allowed && origin && allowed.includes(origin)) return origin;
+          if (!allowed) return "*";
+          return "none";
+        } catch {
+          return "none";
+        }
+      })(),
+      Vary: "Origin",
+    },
+  });
 }
