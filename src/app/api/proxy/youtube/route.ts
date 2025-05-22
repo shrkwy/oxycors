@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-export const runtime = process.env.RUNTIME === 'nodejs' ? 'nodejs' : 'edge'; // or 'nodejs' if CORS issues present.
+export const runtime = "edge"; // or 'nodejs' if CORS issues present.
 
 // ————— Helpers —————
 

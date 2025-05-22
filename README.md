@@ -120,17 +120,24 @@ https://example.com/live/stream.m3u8
 ## 📁 Environment Variables
 
 * **`NEXT_PUBLIC_URL`**
-  Declare your Host (e.g. `https://my-oxycors-app.service.app`).
-
-* **`RUNTIME`**
-  Mention the runtime to execute proxy functions with; either `nodejs` or `edge`. Will fallback to "edge" if undeclared.
+  `RECOMMENDED` Declare your Host / Public URL of hosted instance. (e.g. `https://my-oxycors-app.service.app`).
+  <br>
+  <br>
 
 * **`ALLOWED_ORIGINS`**
-  ⚠️JSON array of allowed origins (origins that can use your proxy service). If undeclared, all origins are allowed access. Include `""` to permit the homepage:
+  `RECOMMENDED` JSON array of allowed origins.
+  Do mention your app origin to prevent abuse. If undeclared, all origins are allowed access.
 
   ```json
-  ["", "https://example1.app", "https://example2.app"]
+  ["https://example1.app", "https://example2.app"]
   ```
+  <br>
+
+#### In your `.env` you may:  
+   ```ini
+   NEXT_PUBLIC_URL=https://my-oxycors-app.service.app
+   ALLOWED_ORIGINS=["https://example1.app", "https://example2.app"]
+   ```
 
 ---
 

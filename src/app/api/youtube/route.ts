@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-export const runtime = process.env.RUNTIME === 'nodejs' ? 'nodejs' : 'edge';;
+export const runtime = "edge";
 
 
 // Helper function to fetch HTML and extract M3U8 URL from YouTube
